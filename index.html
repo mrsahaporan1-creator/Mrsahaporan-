@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>টাইগার গ্যাং অ্যাডমিন প্যানেল</title>
+    
+    <!-- ফন্ট ও আইকন -->
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* --- কালার ও থিম --- */
+        :root {
+            --primary: #00b894;
+            --secondary: #0984e3;
+            --dark: #2d3436;
+            --bg: #dfe6e9;
+            --white: #ffffff;
+            --gradient-header: linear-gradient(135deg, #2d3436 0%, #000000 100%);
+            --gradient-btn: linear-gradient(45deg, #00b894, #0984e3);
+            --shadow: 0 10px 30px rgba(0,0,0,0.1);
+            --radius: 20px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Hind Siliguri', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            background-color: var(--bg); color: var(--dark); 
+            min-height: 100vh; padding-bottom: 120px;
+            overflow-x: hidden;
+        }
+
+        /* --- ১. লোডিং স্ক্রিন --- */
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #fff; z-index: 99999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.6s ease;
+        }
+        .static-logo {
+            width: 140px; height: 140px; object-fit: contain;
+            margin-bottom: 30px; border-radius: 50%;
+        }
+        .progress-container {
+            width: 80%; height: 6px; background: #eee;
+            border-radius: 10px; overflow: hidden; position: relative;
+        }
+        .progress-bar {
+            width: 0%; height: 100%; background: #d63031;
+            animation: loadVideo 2.5s ease-in-out forwards;
+        }
+        @keyframes loadVideo { 0% { width: 0%; } 100% { width: 100%; } }
+        
+        .brand-text {
+            margin-top: 20px; font-size: 1.2rem; font-weight: 700;
+            color: var(--dark); letter-spacing: 1px; text-transform: uppercase;
+        }
+
+        /* --- ২. লগইন পেজ (নতুন) --- */
+        #login-page {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg); z-index: 9000;
+            display: none; /* শুরুতে হাইড, লোডিং শেষে আসবে */
+            flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        
+        .login-card {
+            background: white; width: 100%; max-width: 400px;
+            padding: 40px 30px; border-radius: 25px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15); text-align: center;
+        }
+        .login-icon { font-size: 3rem; color: var(--primary); margin-bottom: 20px; }
+        
+        .login-input {
+            width: 100%; padding: 15px; border: 2px solid #dfe6e9; border-radius: 15px;
+            font-size: 1rem; margin-bottom: 15px; background: #fcfcfc;
+        }
+        .login-input:focus { border-color: var(--primary); outline: none; }
+
+        /* --- ৩. মেইন অ্যাপ (লগইন এর পর) --- */
+        #app-container { display: none; } /* শুরুতে হাইড */
+
+        /* --- হেডার --- */
+        .app-header {
+            background: var(--gradient-header); padding: 15px 20px; 
+            position: sticky; top: 0; z-index: 100;
+            display: flex; align-items: center; gap: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            border-bottom-left-radius: 25px; border-bottom-right-radius: 25px;
+            color: white;
+        }
+        .header-logo { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #fab1a0; }
+        .header-title { font-size: 1.2rem; font-weight: 700; color: #fab1a0; }
+
+        /* --- পেজ সেটআপ --- */
+        .page { display: none; padding: 15px; animation: slideUp 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); }
+        .page.active { display: block; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- ফর্ম কার্ড --- */
+        .card { 
+            background: var(--white); padding: 25px; border-radius: var(--radius); 
+            box-shadow: var(--shadow); position: relative; overflow: hidden; margin-top: 15px; 
+        }
+        .card::before { content:''; position: absolute; top:0; left:0; width:100%; height:5px; background: orange; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; margin-bottom: 8px; font-weight: 600; color: #636e72; display: flex; align-items: center; gap: 8px; }
+        
+        .form-input, .form-select {
+            width: 100%; padding: 14px 15px; border: 2px solid #f1f2f6; border-radius: 15px;
+            font-size: 1rem; background: #fcfcfc; transition: 0.3s;
+        }
+        .form-input:focus, .form-select:focus { border-color: var(--secondary); background: #fff; outline: none; }
+
+        /* --- বাটন --- */
+        .btn {
+            width: 100%; padding: 16px; border-radius: 50px; font-size: 1.1rem; font-weight: 700;
+            border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+            transition: 0.2s; text-transform: uppercase;
+        }
+        .btn:active { transform: scale(0.95); }
+
+        .btn-primary {
+            background: var(--gradient-btn); color: white;
+            box-shadow: 0 10px 20px rgba(9, 132, 227, 0.3); margin-top: 20px;
+        }
+        .btn-update { background: linear-gradient(45deg, #fab1a0, #e17055); color: white; }
+        .btn-upload { background: #fff; color: #e17055; border: 2px dashed #fab1a0; }
+        .btn-upload.done { background: #e3f2fd; color: #0984e3; border: 2px solid #0984e3; }
+
+        /* --- সাকসেস কার্ড --- */
+        #success-area {
+            display: none; margin-top: 25px; 
+            border: 2px solid #00b894; border-radius: 20px; padding: 15px;
+            background: #f0fdf4; animation: popIn 0.5s;
+        }
+        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .success-inner { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .success-img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 3px solid #00b894; }
+        .success-info { text-align: left; flex: 1; }
+        .success-name { font-size: 1.1rem; font-weight: 700; margin: 0; color: var(--dark); }
+        .success-cid { font-family: monospace; font-size: 1.1rem; color: #00b894; font-weight: bold; letter-spacing: 1px; margin-top: 5px; display: block; }
+
+        /* --- রেজাল্ট পেজ --- */
+        .profile-header {
+            background: var(--gradient-header); padding: 50px 20px 100px; 
+            border-radius: 0 0 50px 50px; text-align: center; color: white; margin: -20px -20px 60px;
+            position: relative;
+        }
+        .profile-pic {
+            width: 150px; height: 150px; border-radius: 50%; border: 6px solid rgba(255,255,255,0.2);
+            object-fit: cover; box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        }
+        .profile-card {
+            background: white; border-radius: 30px; padding: 30px; margin-top: -90px;
+            box-shadow: var(--shadow); position: relative; z-index: 10;
+        }
+        .data-row {
+            display: flex; justify-content: space-between; padding: 15px 0; 
+            border-bottom: 1px dashed #eee; font-size: 0.95rem;
+        }
+        .data-value { font-weight: 700; color: var(--dark); text-align: right; }
+
+        /* --- লিস্ট আইটেম --- */
+        .user-list-item {
+            background: white; padding: 15px; border-radius: 15px; margin-bottom: 15px; 
+            display: flex; align-items: center; gap: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .action-btns { margin-left: auto; display: flex; gap: 8px; }
+        .mini-btn { width: 35px; height: 35px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+
+        /* --- বটম ন্যাভ --- */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; background: white;
+            display: flex; justify-content: space-around; padding: 15px 0;
+            border-radius: 30px 30px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.05); z-index: 1000;
+        }
+        .nav-item { text-align: center; color: #b2bec3; cursor: pointer; flex: 1; transition: 0.3s; }
+        .nav-item i { font-size: 1.6rem; margin-bottom: 5px; display: block; }
+        .nav-item.active { color: var(--secondary); transform: translateY(-5px); }
+
+        .back-btn {
+            position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.2);
+            color: white; border: none; padding: 10px 18px; border-radius: 20px; 
+            backdrop-filter: blur(5px); cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ১. লোডিং স্ক্রিন -->
+    <div id="loading-screen">
+        <img src="https://i.ibb.co.com/7JD280YV/1766496208611.png" class="static-logo">
+        <div class="progress-container"><div class="progress-bar"></div></div>
+        <div class="brand-text">কচুয়া চাঁদপুর টাইগার গ্যাং 🐯</div>
+    </div>
+
+    <!-- ২. অ্যাডমিন লগইন পেজ -->
+    <div id="login-page">
+        <div class="login-card">
+            <div class="login-icon"><i class="fas fa-user-shield"></i></div>
+            <h2 style="margin-bottom: 5px;">অ্যাডমিন লগইন</h2>
+            <p style="color:#666; margin-bottom: 25px;">শুধুমাত্র অনুমোদিত ব্যক্তিদের জন্য</p>
+            
+            <input type="email" id="adminEmail" class="login-input" placeholder="অ্যাডমিন ইমেইল">
+            <input type="password" id="adminPass" class="login-input" placeholder="পাসওয়ার্ড">
+            
+            <button class="btn btn-primary" onclick="handleAdminLogin()">লগইন করুন <i class="fas fa-sign-in-alt"></i></button>
+        </div>
+    </div>
+
+    <!-- ৩. মেইন অ্যাপ (লগইন এর পরে আসবে) -->
+    <div id="app-container">
+
+        <!-- হোম পেজ -->
+        <div id="page-home" class="page active">
+            <div class="app-header">
+                <img src="https://i.ibb.co.com/7JD280YV/1766496208611.png" class="header-logo">
+                <div class="header-title">কচুয়া চাঁদপুর টাইগার গ্যাং</div>
+            </div>
+
+            <div class="card">
+                <h3 style="text-align: center; margin-bottom: 25px; color: var(--dark);">
+                    <span id="formTitle">সদস্য নিবন্ধন</span> 📝
+                </h3>
+                
+                <form id="regForm">
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-user"></i> ইউনিক নাম</label>
+                        <input type="text" id="regName" class="form-input" placeholder="নাম লিখুন">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-medal"></i> পদবি</label>
+                        <select id="regTitle" class="form-select">
+                            <option value="">পদবি নির্বাচন করুন...</option>
+                            <option value="Convener">👑 আহ্বায়ক (লিডার)</option>
+                            <option value="JointConvener">⚔️ যুগ্ন আহ্বায়ক</option>
+                            <option value="Secretary">✍️ সেক্রেটারি</option>
+                            <option value="Member">🛡️ সদস্য</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-phone"></i> মোবাইল</label>
+                        <input type="number" id="regPhone" class="form-input" placeholder="01xxxxxxxxx">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-envelope"></i> ইমেইল</label>
+                        <input type="email" id="regEmail" class="form-input" placeholder="mail@gmail.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-calendar-alt"></i> বয়স</label>
+                        <input type="number" id="regAge" class="form-input" placeholder="যেমন: 20" oninput="handleAgeLogic()">
+                    </div>
+
+                    <div id="box-birth" class="form-group" style="display:none; background:#e3f2fd; padding:15px; border-radius:15px;">
+                        <label class="form-label" style="color:#0984e3;">📜 জন্ম নিবন্ধন নম্বর</label>
+                        <input type="number" id="regBirthVal" class="form-input">
+                    </div>
+
+                    <div id="box-nid" class="form-group" style="display:none; background:#e3f2fd; padding:15px; border-radius:15px;">
+                        <label class="form-label" style="color:#0984e3;">💳 NID নম্বর</label>
+                        <input type="number" id="regNIDVal" class="form-input" style="margin-bottom:10px;">
+                        <label class="form-label" style="color:#0984e3;">🎂 জন্ম তারিখ</label>
+                        <input type="date" id="regDOBVal" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-lock"></i> পিন (শুধুমাত্র ৬ ডিজিট)</label>
+                        <input type="number" id="regPin" class="form-input" placeholder="******" 
+                               oninput="if(this.value.length > 6) this.value = this.value.slice(0, 6);">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-image"></i> ছবি</label>
+                        <input type="file" id="imgFile" hidden>
+                        <div class="btn btn-upload" id="upBtn" onclick="document.getElementById('imgFile').click()">
+                            <i class="fas fa-camera"></i> ছবি আপলোড করুন
+                        </div>
+                        <input type="hidden" id="finalImgUrl">
+                    </div>
+
+                    <button type="button" class="btn btn-primary" id="submitBtn" onclick="checkAndRegister()">
+                        আইডি তৈরি করুন 🚀
+                    </button>
+                    
+                    <button type="button" class="btn" id="cancelEditBtn" onclick="cancelEdit()" style="display:none; background:#eee; color:#333; margin-top:10px;">
+                        বাতিল করুন
+                    </button>
+                </form>
+
+                <!-- সাকসেস কার্ড -->
+                <div id="success-area">
+                    <div class="success-inner">
+                        <img id="suc-img" class="success-img">
+                        <div class="success-info">
+                            <h3 id="suc-name" class="success-name"></h3>
+                            <span id="suc-cid" class="success-cid"></span>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="copyCid()" style="background: #2d3436; color: white; height: 40px; font-size: 0.9rem; width: 100%;">
+                        <i class="far fa-copy"></i> আইডি কপি করুন
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- সার্চ পেজ -->
+        <div id="page-search" class="page">
+            <h2 style="text-align: center; margin-bottom: 30px;">সদস্য খুঁজুন 🔍</h2>
+            <div style="display: flex; gap: 10px; background: white; padding: 10px; border-radius: 50px; box-shadow: var(--shadow);">
+                <input type="number" id="searchInput" class="form-input" style="border:none; border-radius:50px;" placeholder="১৩ ডিজিটের আইডি দিন">
+                <button class="btn" onclick="searchUser()" style="width:55px; height:55px; border-radius:50%; background:var(--secondary); color:white;"><i class="fas fa-arrow-right"></i></button>
+            </div>
+            <div style="text-align: center; margin-top: 80px; opacity: 0.5;">
+                <i class="fas fa-id-card" style="font-size: 5rem; color: #b2bec3;"></i>
+                <p style="margin-top: 15px;">আইডি দিয়ে সার্চ করুন</p>
+            </div>
+        </div>
+
+        <!-- রেজাল্ট পেজ -->
+        <div id="page-result" class="page" style="padding: 0;">
+            <div class="profile-header">
+                <button class="back-btn" onclick="window.history.back()"><i class="fas fa-arrow-left"></i> ব্যাক</button>
+                <img id="res-img" class="profile-pic">
+                <h2 id="res-name" style="margin-top: 15px; font-size: 1.6rem;"></h2>
+                <div class="rank-badge" id="res-rank" style="background: rgba(0,0,0,0.3); color: white; padding:5px 15px; border-radius:20px;"></div>
+            </div>
+            <div style="padding: 0 25px;">
+                <div class="profile-card">
+                    <div class="data-row"><span class="data-label">🆔 আইডি</span><span class="data-value" id="res-cid" style="color: var(--secondary);"></span></div>
+                    <div class="data-row"><span class="data-label">📞 ফোন</span><span class="data-value" id="res-phone"></span></div>
+                    <div class="data-row"><span class="data-label">📧 ইমেইল</span><span class="data-value" id="res-email" style="font-size: 0.85rem;"></span></div>
+                    <div class="data-row"><span class="data-label">🎂 বয়স</span><span class="data-value" id="res-age"></span></div>
+                    <div class="data-row"><span class="data-label" id="res-id-label">💳 NID</span><span class="data-value" id="res-id-val"></span></div>
+                    <div class="data-row"><span class="data-label">🔐 পিন</span><span class="data-value" id="res-pin"></span></div>
+                    
+                    <div style="text-align: center; margin-top: 25px; padding-top: 15px; border-top: 2px solid #eee;">
+                        <div style="font-size: 1.1rem; font-weight: 800; color: #d63031;">কচুয়া চাঁদপুর টাইগার গ্যাং 🐯</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- লিস্ট পেজ -->
+        <div id="page-list" class="page">
+            <h2 style="margin-bottom: 20px;">সকল সদস্য তালিকা 📋</h2>
+            <div id="list-container">
+                <div style="text-align: center; margin-top: 50px;"><i class="fas fa-spinner fa-spin"></i> লোডিং...</div>
+            </div>
+        </div>
+
+        <!-- বটম ন্যাভ -->
+        <nav class="bottom-nav">
+            <div class="nav-item active" onclick="navigate('home')"><i class="fas fa-home"></i><span>হোম</span></div>
+            <div class="nav-item" onclick="navigate('search')"><i class="fas fa-search"></i><span>খুঁজুন</span></div>
+            <div class="nav-item" onclick="navigate('list')"><i class="fas fa-list"></i><span>লিস্ট</span></div>
+        </nav>
+
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, push, set, get, query, orderByChild, equalTo, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Parvez Console Config
+        const firebaseConfig = {
+  apiKey: "AIzaSyCFZpoD3VsY6jUoLOyvPkvvgAi5G7FSrU8",
+  authDomain: "sahaporan-f803e.firebaseapp.com",
+  databaseURL: "https://sahaporan-f803e-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "sahaporan-f803e",
+  storageBucket: "sahaporan-f803e.firebasestorage.app",
+  messagingSenderId: "363059068068",
+  appId: "1:363059068068:web:26e29a831a437497d13a31"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app); // Auth Init
+        const db = getDatabase(app);
+
+        // Global Exports
+        window.db = db; window.ref = ref; window.push = push; window.set = set;
+        window.get = get; window.query = query; window.orderByChild = orderByChild;
+        window.equalTo = equalTo; window.remove = remove; window.update = update;
+        window.auth = auth; window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+
+        window.onload = () => {
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loading-screen').style.display = 'none';
+                    // লোডিং শেষে লগইন পেজ আসবে
+                    document.getElementById('login-page').style.display = 'flex';
+                }, 600);
+            }, 2500); 
+        };
+    </script>
+
+    <script>
+        const IMG_KEY = "49df6867a6615bf029b3884dc2b34426";
+        let editingKey = null;
+        let allUsersData = {};
+
+        const roleData = {
+            "Convener": { name: "আহ্বায়ক (লিডার)", emoji: "👑" },
+            "JointConvener": { name: "যুগ্ন আহ্বায়ক", emoji: "⚔️" },
+            "Secretary": { name: "সেক্রেটারি", emoji: "✍️" },
+            "Member": { name: "সদস্য", emoji: "🛡️" }
+        };
+
+        // --- অ্যাডমিন লগইন ফাংশন ---
+        window.handleAdminLogin = function() {
+            const email = document.getElementById('adminEmail').value;
+            const pass = document.getElementById('adminPass').value;
+            const btn = document.querySelector('#login-page .btn');
+
+            if(!email || !pass) {
+                alert('ইমেইল এবং পাসওয়ার্ড দিন!'); return;
+            }
+
+            btn.innerHTML = 'চেক করা হচ্ছে...';
+
+            window.signInWithEmailAndPassword(window.auth, email, pass)
+                .then((userCredential) => {
+                    // লগইন সফল
+                    document.getElementById('login-page').style.display = 'none';
+                    document.getElementById('app-container').style.display = 'block';
+                    history.replaceState({page: 'home'}, null, '');
+                })
+                .catch((error) => {
+                    alert('❌ ভুল ইমেইল বা পাসওয়ার্ড!');
+                    btn.innerHTML = 'লগইন করুন <i class="fas fa-sign-in-alt"></i>';
+                });
+        };
+
+        // --- নেভিগেশন ---
+        function navigate(pageName) {
+            updateUI(pageName);
+            history.pushState({page: pageName}, null, '');
+        }
+
+        function updateUI(pageName) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+            if(pageName === 'home') { document.getElementById('page-home').classList.add('active'); document.querySelectorAll('.nav-item')[0].classList.add('active'); }
+            if(pageName === 'search') { document.getElementById('page-search').classList.add('active'); document.querySelectorAll('.nav-item')[1].classList.add('active'); }
+            if(pageName === 'list') { 
+                document.getElementById('page-list').classList.add('active'); 
+                document.querySelectorAll('.nav-item')[2].classList.add('active'); 
+                loadUserList();
+            }
+            if(pageName === 'result') document.getElementById('page-result').classList.add('active');
+
+            window.scrollTo(0,0);
+        }
+
+        window.onpopstate = function(e) { e.state ? updateUI(e.state.page) : updateUI('home'); };
+
+        window.handleAgeLogic = function() {
+            const age = parseInt(document.getElementById('regAge').value);
+            const bBirth = document.getElementById('box-birth');
+            const bNid = document.getElementById('box-nid');
+            
+            bBirth.style.display = 'none';
+            bNid.style.display = 'none';
+
+            if(age >= 15 && age <= 20) {
+                bBirth.style.display = 'block';
+                if(!editingKey) {
+                    document.getElementById('regNIDVal').value = "";
+                    document.getElementById('regDOBVal').value = "";
+                }
+            } else if(age >= 21 && age <= 70) {
+                bNid.style.display = 'block';
+                if(!editingKey) {
+                    document.getElementById('regBirthVal').value = "";
+                }
+            }
+        };
+
+        document.getElementById('imgFile').addEventListener('change', async function() {
+            const file = this.files[0];
+            if(!file) return;
+            const btn = document.getElementById('upBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> হচ্ছে...';
+            const fd = new FormData(); fd.append("image", file);
+            try {
+                const req = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, { method: "POST", body: fd });
+                const res = await req.json();
+                if(res.success) {
+                    document.getElementById('finalImgUrl').value = res.data.url;
+                    btn.classList.add('done'); btn.innerHTML = '✅ আপলোড সম্পন্ন';
+                } else btn.innerHTML = '❌ আবার চেষ্টা করুন';
+            } catch(e) { alert('নেটওয়ার্ক সমস্যা'); }
+        });
+
+        // --- রেজিস্ট্রেশন ---
+        window.checkAndRegister = function() {
+            const btn = document.getElementById('submitBtn');
+            const name = document.getElementById('regName').value.trim();
+            const roleKey = document.getElementById('regTitle').value;
+            const age = parseInt(document.getElementById('regAge').value);
+            const img = document.getElementById('finalImgUrl').value;
+            const pin = document.getElementById('regPin').value;
+
+            if(pin.toString().length !== 6) {
+                alert('পিন অবশ্যই ৬ ডিজিটের হতে হবে!'); return;
+            }
+
+            if(!name || !roleKey || !img || isNaN(age)) {
+                alert('সব তথ্য সঠিকভাবে দিন!'); return;
+            }
+
+            let birth = "N/A", nid = "N/A", dob = "N/A";
+            if(age >= 15 && age <= 20) {
+                birth = document.getElementById('regBirthVal').value;
+                if(!birth) { alert('জন্ম নিবন্ধন দিন'); return; }
+            } else if(age >= 21 && age <= 70) {
+                nid = document.getElementById('regNIDVal').value;
+                dob = document.getElementById('regDOBVal').value;
+                if(!nid || !dob) { alert('NID ও জন্ম তারিখ দিন'); return; }
+            } else { alert('বয়স ১৫-৭০ হতে হবে'); return; }
+
+            btn.disabled = true; btn.innerHTML = 'কাজ হচ্ছে... ⏳';
+
+            const usersRef = window.ref(window.db, 'users');
+
+            window.get(usersRef).then(snapshot => {
+                const users = snapshot.exists() ? snapshot.val() : {};
+                const userList = Object.values(users);
+                const userKeys = Object.keys(users);
+                
+                const otherUsers = editingKey ? userList.filter((u, i) => userKeys[i] !== editingKey) : userList;
+
+                if(otherUsers.some(u => u.name === name)) {
+                    alert('⛔ এই নাম দিয়ে ইতিমধ্যে একজন মেম্বার আছেন!'); resetBtn(); return;
+                }
+
+                if(roleKey !== 'Member') {
+                    if(otherUsers.some(u => u.title === roleKey)) {
+                        alert(`⛔ "${roleData[roleKey].name}" পদটি পূর্ণ হয়ে গেছে।`);
+                        resetBtn(); return;
+                    }
+                }
+
+                let isDocExist = false;
+                if(birth !== "N/A") isDocExist = otherUsers.some(u => u.birthCert === birth);
+                else isDocExist = otherUsers.some(u => u.nid === nid);
+
+                if(isDocExist) {
+                    alert('⛔ এই NID/জন্ম নিবন্ধন ব্যবহৃত হয়েছে!'); resetBtn(); return;
+                }
+
+                saveData(name, roleKey, age, pin, img, birth, nid, dob);
+
+            }).catch(e => {
+                alert('এরর: ' + e.message); resetBtn();
+            });
+        };
+
+        function resetBtn() {
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = false;
+            btn.innerHTML = editingKey ? 'আপডেট করুন 🔄' : 'আইডি তৈরি করুন 🚀';
+        }
+
+        function saveData(name, roleKey, age, pin, img, birth, nid, dob) {
+            const now = new Date();
+            let cid = editingKey && allUsersData[editingKey] ? allUsersData[editingKey].cid : Math.floor(1000000000000 + Math.random() * 9000000000000).toString();
+            
+            const userData = {
+                name, title: roleKey, 
+                phone: document.getElementById('regPhone').value,
+                email: document.getElementById('regEmail').value,
+                age, birthCert: birth, nid, dob, pin, image: img, cid,
+                timestamp: `${now.toLocaleDateString('bn-BD')}, ${now.toLocaleTimeString('bn-BD')}`
+            };
+
+            if(editingKey) {
+                window.update(window.ref(window.db, 'users/' + editingKey), userData).then(() => {
+                    alert('✅ আপডেট সফল হয়েছে!');
+                    resetForm();
+                    cancelEdit();
+                });
+            } else {
+                window.push(window.ref(window.db, 'users'), userData).then(() => {
+                    resetForm();
+                    document.getElementById('suc-img').src = img;
+                    document.getElementById('suc-name').innerText = name;
+                    document.getElementById('suc-cid').innerText = cid;
+                    document.getElementById('success-area').style.display = 'block';
+                    document.getElementById('success-area').scrollIntoView({behavior:'smooth'});
+                });
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('regForm').reset();
+            document.getElementById('upBtn').innerHTML = '<i class="fas fa-camera"></i> ছবি আপলোড করুন';
+            document.getElementById('upBtn').classList.remove('done');
+            document.getElementById('box-birth').style.display = 'none';
+            document.getElementById('box-nid').style.display = 'none';
+            document.getElementById('success-area').style.display = 'none';
+            resetBtn();
+        }
+
+        window.editUser = function(key) {
+            const user = allUsersData[key];
+            if(!user) return;
+            editingKey = key;
+            
+            document.getElementById('regName').value = user.name;
+            document.getElementById('regTitle').value = user.title;
+            document.getElementById('regPhone').value = user.phone;
+            document.getElementById('regEmail').value = user.email;
+            document.getElementById('regAge').value = user.age;
+            document.getElementById('regPin').value = user.pin;
+            document.getElementById('finalImgUrl').value = user.image;
+            document.getElementById('upBtn').classList.add('done');
+            document.getElementById('upBtn').innerHTML = '✅ আগের ছবি আছে';
+
+            window.handleAgeLogic();
+
+            if(user.birthCert !== "N/A") document.getElementById('regBirthVal').value = user.birthCert;
+            if(user.nid !== "N/A") {
+                document.getElementById('regNIDVal').value = user.nid;
+                document.getElementById('regDOBVal').value = user.dob;
+            }
+
+            document.getElementById('formTitle').innerText = "তথ্য এডিট করুন";
+            const btn = document.getElementById('submitBtn');
+            btn.innerHTML = 'আপডেট করুন 🔄';
+            btn.className = "btn btn-update";
+            document.getElementById('cancelEditBtn').style.display = 'block';
+            document.getElementById('success-area').style.display = 'none';
+            navigate('home');
+        };
+
+        window.cancelEdit = function() {
+            editingKey = null;
+            resetForm();
+            document.getElementById('formTitle').innerText = "সদস্য নিবন্ধন";
+            const btn = document.getElementById('submitBtn');
+            btn.innerHTML = 'আইডি তৈরি করুন 🚀';
+            btn.className = "btn btn-primary";
+            document.getElementById('cancelEditBtn').style.display = 'none';
+        };
+
+        window.searchUser = function() {
+            const id = document.getElementById('searchInput').value.trim();
+            if(!id) { alert('আইডি দিন'); return; }
+            
+            window.get(window.ref(window.db, 'users')).then(snap => {
+                if(snap.exists()) {
+                    const allUsers = Object.values(snap.val());
+                    const val = allUsers.find(u => u.cid === id);
+
+                    if(val) {
+                        const rInfo = roleData[val.title] || { name: val.title, emoji: "" };
+                        document.getElementById('res-img').src = val.image;
+                        document.getElementById('res-name').innerText = val.name;
+                        document.getElementById('res-rank').innerText = `${rInfo.emoji} ${rInfo.name}`;
+                        document.getElementById('res-cid').innerText = val.cid;
+                        document.getElementById('res-phone').innerText = val.phone;
+                        document.getElementById('res-email').innerText = val.email;
+                        document.getElementById('res-age').innerText = val.age + " বছর";
+                        document.getElementById('res-pin').innerText = val.pin;
+
+                        if(val.birthCert !== "N/A") {
+                            document.getElementById('res-id-label').innerText = "📜 জন্ম নিবন্ধন";
+                            document.getElementById('res-id-val').innerText = val.birthCert;
+                        } else {
+                            document.getElementById('res-id-label').innerText = "💳 NID";
+                            document.getElementById('res-id-val').innerText = val.nid;
+                        }
+                        navigate('result');
+                    } else { alert('❌ সদস্য পাওয়া যায়নি!'); }
+                } else { alert('❌ সদস্য পাওয়া যায়নি!'); }
+            });
+        };
+
+        window.loadUserList = function() {
+            window.get(window.ref(window.db, 'users')).then(snap => {
+                if(snap.exists()) {
+                    let html = '';
+                    const data = snap.val();
+                    allUsersData = data;
+                    
+                    Object.keys(data).forEach(k => {
+                        const u = data[k];
+                        const rInfo = roleData[u.title] || { name: u.title, emoji: "" };
+                        html += `
+                        <div class="user-list-item">
+                            <img src="${u.image}" style="width:55px; height:55px; border-radius:50%; object-fit:cover;">
+                            <div style="flex:1;">
+                                <h4 style="margin:0; font-size:1rem;">${u.name}</h4>
+                                <small style="color:#0984e3; font-weight:bold;">${rInfo.emoji} ${rInfo.name}</small><br>
+                                <small style="color:#666; font-size:0.75rem;">ID: ${u.cid}</small>
+                            </div>
+                            <div class="action-btns">
+                                <button onclick="editUser('${k}')" class="mini-btn" style="background:#e3f2fd; color:#0984e3;"><i class="fas fa-pencil-alt"></i></button>
+                                <button onclick="delItem('${k}')" class="mini-btn" style="background:#ffebee; color:#d63031;"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>`;
+                    });
+                    document.getElementById('list-container').innerHTML = html;
+                } else document.getElementById('list-container').innerHTML = '<p style="text-align:center;">কোনো মেম্বার নেই</p>';
+            });
+        };
+
+        window.delItem = k => { if(confirm('মুছে ফেলবেন?')) window.remove(window.ref(window.db, 'users/'+k)).then(loadUserList); };
+        window.copyCid = () => { navigator.clipboard.writeText(document.getElementById('suc-cid').innerText); alert('কপি হয়েছে!'); };
+
+    </script>
+</body>
+</html>
